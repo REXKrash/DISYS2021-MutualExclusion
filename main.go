@@ -19,10 +19,10 @@ type server struct {
 }
 
 func (s *server) FindLeaderRequest(ctx context.Context, request *pb.LeaderRequest) (*pb.LeaderResponse, error) {
-	log.Println("Received LeaderRequest from", targetPort, "to", listenPort, "lookingForLeader:", request.LookingForLeader, "lowestPort:", request.LowestPort)
+	log.Println("Received LeaderRequest to", listenPort, "lookingForLeader:", request.LookingForLeader, "lowestPort:", request.LowestPort)
 	lookingForLeader = request.LookingForLeader
 
-	if request.LowestPort <= lowestPort {
+	if request.LowestPort <= lowestPort && lookingForLeader {
 		lowestPort = request.LowestPort
 		if lowestPort == listenPort {
 			lookingForLeader = false
@@ -36,7 +36,7 @@ func (s *server) FindLeaderRequest(ctx context.Context, request *pb.LeaderReques
 func (s *server) SendTokenRequest(ctx context.Context, request *pb.TokenRequest) (*pb.TokenResponse, error) {
 	lookingForLeader = false
 	hasToken = true
-	log.Println("Received TokenRequest from", targetPort, "to", listenPort)
+	log.Println("Received TokenRequest to", listenPort)
 	return &pb.TokenResponse{Status: 1, Message: "Response"}, nil
 }
 
@@ -91,7 +91,7 @@ func runClient() {
 
 	for {
 		if lookingForLeader {
-			log.Println("Sending LeaderRequest to", targetPort, "lookingForLeader", lookingForLeader, "lowestPort", lowestPort)
+			log.Println("Sending LeaderRequest from", listenPort, "to", targetPort, "lookingForLeader", lookingForLeader, "lowestPort", lowestPort)
 			client.FindLeaderRequest(ctx, &pb.LeaderRequest{LookingForLeader: lookingForLeader, LowestPort: lowestPort})
 		} else {
 			break
