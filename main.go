@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 	"time"
 
@@ -20,7 +19,7 @@ type server struct {
 }
 
 func (s *server) FindLeaderRequest(ctx context.Context, request *pb.LeaderRequest) (*pb.LeaderResponse, error) {
-	fmt.Println("Received LeaderRequest from", targetPort, "looking for leader:", request.LookingForLeader, "lowest port:", request.LowestPort)
+	log.Println("Received LeaderRequest from", targetPort, "to", listenPort, "lookingForLeader:", request.LookingForLeader, "lowestPort:", request.LowestPort)
 	lookingForLeader = request.LookingForLeader
 
 	if request.LowestPort <= lowestPort {
@@ -28,7 +27,7 @@ func (s *server) FindLeaderRequest(ctx context.Context, request *pb.LeaderReques
 		if lowestPort == listenPort {
 			lookingForLeader = false
 			hasToken = true
-			fmt.Println("Found leader, it is me!")
+			log.Println("Found leader, it is me!")
 		}
 	}
 	return &pb.LeaderResponse{LookingForLeader: lookingForLeader, LowestPort: lowestPort}, nil
@@ -37,7 +36,7 @@ func (s *server) FindLeaderRequest(ctx context.Context, request *pb.LeaderReques
 func (s *server) SendTokenRequest(ctx context.Context, request *pb.TokenRequest) (*pb.TokenResponse, error) {
 	lookingForLeader = false
 	hasToken = true
-	fmt.Println("Received TokenRequest")
+	log.Println("Received TokenRequest from", targetPort, "to", listenPort)
 	return &pb.TokenResponse{Status: 1, Message: "Response"}, nil
 }
 
@@ -48,14 +47,14 @@ var lookingForLeader = true
 var hasToken = false
 
 func main() {
-	fmt.Println("Welcome to FijiFunCoin, safely distributed unhackable coin system")
+	log.Println("Token-ring service by the FijiFunCoin team")
 	if len(os.Args) > 3 {
-		fmt.Println("Y U no give ports!")
+		log.Println("Please add a port!")
 		if len(os.Args) > 2 {
-			fmt.Println("TargetPort: Missing")
+			log.Println("TargetPort: Missing")
 		}
 		if len(os.Args) > 1 {
-			fmt.Println("ListenPort: Missing")
+			log.Println("ListenPort: Missing")
 		}
 		return
 	}
@@ -92,7 +91,7 @@ func runClient() {
 
 	for {
 		if lookingForLeader {
-			fmt.Println("Sending LeaderRequest to", targetPort)
+			log.Println("Sending LeaderRequest to", targetPort, "lookingForLeader", lookingForLeader, "lowestPort", lowestPort)
 			client.FindLeaderRequest(ctx, &pb.LeaderRequest{LookingForLeader: lookingForLeader, LowestPort: lowestPort})
 		} else {
 			break
@@ -101,7 +100,7 @@ func runClient() {
 	}
 	for {
 		if hasToken {
-			fmt.Println("Sending TokenRequest to", targetPort)
+			log.Println("Sending TokenRequest from", listenPort, "to", targetPort)
 			_, err = client.SendTokenRequest(ctx, &pb.TokenRequest{Status: 1, Message: "Request!"})
 			if err != nil {
 				log.Fatalf("Failed to send TokenRequest: %v", err)
@@ -113,7 +112,7 @@ func runClient() {
 }
 
 func runServer() {
-	fmt.Println("--- SERVER APP ---")
+	log.Println("--- SERVER APP ---")
 
 	address := "localhost:" + strconv.Itoa(int(listenPort))
 	lis, err := net.Listen("tcp", address)
@@ -123,8 +122,6 @@ func runServer() {
 	s := grpc.NewServer()
 
 	pb.RegisterTokenServiceServer(s, &server{})
-
-	fmt.Println("Listen port:", listenPort)
 	log.Printf("Server listening at %v", lis.Addr())
 
 	if err := s.Serve(lis); err != nil {
