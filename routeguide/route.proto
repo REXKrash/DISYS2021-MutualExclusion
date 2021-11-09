@@ -5,15 +5,26 @@ option go_package = "./routeguide";
 package routeguide;
 
 service TokenService {
-    rpc SendRequest(Request) returns (Response) {}
+    rpc FindLeaderRequest(LeaderRequest) returns (LeaderResponse) {}
+    rpc SendTokenRequest(TokenRequest) returns (TokenResponse) {}
 }
 
-message Request {
-    int32 status = 1;
-    int32 message = 2;
+message LeaderRequest {
+    bool lookingForLeader = 1;
+    int32 lowestPort = 2;
 }
 
-message Response {
+message LeaderResponse {
+    bool lookingForLeader = 1;
+    int32 lowestPort = 2;
+}
+
+message TokenRequest {
     int32 status = 1;
-    int32 message = 2;
+    string message = 2;
+}
+
+message TokenResponse {
+    int32 status = 1;
+    string message = 2;
 }

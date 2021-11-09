@@ -18,7 +18,8 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type TokenServiceClient interface {
-	SendRequest(ctx context.Context, in *Request, opts ...grpc.CallOption) (*Response, error)
+	FindLeaderRequest(ctx context.Context, in *LeaderRequest, opts ...grpc.CallOption) (*LeaderResponse, error)
+	SendTokenRequest(ctx context.Context, in *TokenRequest, opts ...grpc.CallOption) (*TokenResponse, error)
 }
 
 type tokenServiceClient struct {
@@ -29,9 +30,18 @@ func NewTokenServiceClient(cc grpc.ClientConnInterface) TokenServiceClient {
 	return &tokenServiceClient{cc}
 }
 
-func (c *tokenServiceClient) SendRequest(ctx context.Context, in *Request, opts ...grpc.CallOption) (*Response, error) {
-	out := new(Response)
-	err := c.cc.Invoke(ctx, "/routeguide.TokenService/SendRequest", in, out, opts...)
+func (c *tokenServiceClient) FindLeaderRequest(ctx context.Context, in *LeaderRequest, opts ...grpc.CallOption) (*LeaderResponse, error) {
+	out := new(LeaderResponse)
+	err := c.cc.Invoke(ctx, "/routeguide.TokenService/FindLeaderRequest", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *tokenServiceClient) SendTokenRequest(ctx context.Context, in *TokenRequest, opts ...grpc.CallOption) (*TokenResponse, error) {
+	out := new(TokenResponse)
+	err := c.cc.Invoke(ctx, "/routeguide.TokenService/SendTokenRequest", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +52,8 @@ func (c *tokenServiceClient) SendRequest(ctx context.Context, in *Request, opts 
 // All implementations must embed UnimplementedTokenServiceServer
 // for forward compatibility
 type TokenServiceServer interface {
-	SendRequest(context.Context, *Request) (*Response, error)
+	FindLeaderRequest(context.Context, *LeaderRequest) (*LeaderResponse, error)
+	SendTokenRequest(context.Context, *TokenRequest) (*TokenResponse, error)
 	mustEmbedUnimplementedTokenServiceServer()
 }
 
@@ -50,8 +61,11 @@ type TokenServiceServer interface {
 type UnimplementedTokenServiceServer struct {
 }
 
-func (UnimplementedTokenServiceServer) SendRequest(context.Context, *Request) (*Response, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SendRequest not implemented")
+func (UnimplementedTokenServiceServer) FindLeaderRequest(context.Context, *LeaderRequest) (*LeaderResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method FindLeaderRequest not implemented")
+}
+func (UnimplementedTokenServiceServer) SendTokenRequest(context.Context, *TokenRequest) (*TokenResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SendTokenRequest not implemented")
 }
 func (UnimplementedTokenServiceServer) mustEmbedUnimplementedTokenServiceServer() {}
 
@@ -66,20 +80,38 @@ func RegisterTokenServiceServer(s grpc.ServiceRegistrar, srv TokenServiceServer)
 	s.RegisterService(&TokenService_ServiceDesc, srv)
 }
 
-func _TokenService_SendRequest_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Request)
+func _TokenService_FindLeaderRequest_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LeaderRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(TokenServiceServer).SendRequest(ctx, in)
+		return srv.(TokenServiceServer).FindLeaderRequest(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/routeguide.TokenService/SendRequest",
+		FullMethod: "/routeguide.TokenService/FindLeaderRequest",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TokenServiceServer).SendRequest(ctx, req.(*Request))
+		return srv.(TokenServiceServer).FindLeaderRequest(ctx, req.(*LeaderRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TokenService_SendTokenRequest_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TokenRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TokenServiceServer).SendTokenRequest(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/routeguide.TokenService/SendTokenRequest",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TokenServiceServer).SendTokenRequest(ctx, req.(*TokenRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -92,8 +124,12 @@ var TokenService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*TokenServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "SendRequest",
-			Handler:    _TokenService_SendRequest_Handler,
+			MethodName: "FindLeaderRequest",
+			Handler:    _TokenService_FindLeaderRequest_Handler,
+		},
+		{
+			MethodName: "SendTokenRequest",
+			Handler:    _TokenService_SendTokenRequest_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
